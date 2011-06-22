@@ -1,0 +1,51 @@
+module PE.Trie where
+import Text.Disassembler.X86Disassembler
+import Data.Maybe
+import Data.List 
+
+data Trie = 
+     Trie {   ins      :: Instruction 
+            , children :: [(Instruction,Trie)] }
+     | Empty
+
+
+tfind :: [Instruction] -> Trie -> Maybe Trie
+tfind []     t = Just t 
+tfind (x:xs) t = case lookup x (children t) of
+                   Nothing -> Nothing
+                   Just t' -> tfind xs t'
+
+
+--Read a list with a list, if a match occurs pop first list and repeat with 
+--remaining list.
+tinsert :: [Instruction] -> Trie -> Trie
+tinsert [] a     = a
+tinsert (x:xs) a = case (lurem x (children a)) of 
+                   Just (item,rest) -> Trie { ins = (ins a), children=(rest ++ [(fst item, tinsert xs (snd item))]) }
+                   Nothing          -> Trie { ins = (ins a), children=((children a) ++ [(x,(buildTrie (x:xs)))]) }
+
+
+--Pluck a matching item from a list and return it and the list without said item
+--If no match, return nothing.
+lurem :: Instruction -> [(Instruction,Trie)] -> Maybe ((Instruction,Trie), [(Instruction,Trie)])
+lurem _ []   = Nothing 
+lurem k (x:xs) = case ((fst x) == k) of 
+                  True  -> let index  = fromJust (elemIndex k (map fst (x:xs))) in
+                           let item   = (x:xs) !! index in
+                           let prefix = take (index) (x:xs) in
+                           let suffix = drop (index+1) (x:xs) in
+                            Just (item, prefix ++ suffix)
+                  False -> lurem k xs
+
+
+-- Build a trie from an Opcode List
+-- Create a Trie Node for each opcode, adding opcodes 
+-- to each level down as we see them in the list 
+
+buildTrie :: [Instruction] -> Trie
+buildTrie []     = Empty
+buildTrie (x:xs) = Trie { ins = x, children = clist xs }
+    where
+      clist [] = []
+      clist ks = [(head ks, buildTrie ks)] 
+      

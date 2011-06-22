@@ -1,0 +1,111 @@
+{-# LANGUAGE FlexibleInstances #-}
+module Data.Ranges 
+(range, ranges, Range, Ranges, inRange, inRanges, toSet, single, addRange, diffRanges)
+where
+
+import Data.Set (Set)
+import qualified Data.Set as Set
+
+-- Why do we need a Single instead of Range (a, a)?
+data Ord a => Range a = Single !a | Range !a !a | Empty
+instance (Ord a, Show a) => Show (Range a) where
+	show (Single x) = concat ["(", show x, ")"]
+	show (Range x y) = concat ["(", show x, ", ", show y, ")"]
+	show Empty =  "(Empty)"
+
+newtype Ord a => Ranges a = Ranges [Range a] deriving Show
+
+-- | A rather hacked-up instance.
+--   This is to support fast lookups using 'Data.Set' (see 'toSet').
+--   Ranges are equal if one is contained in the other?!
+instance (Ord a) => Eq (Range a) where
+	(Single x) == (Single y) = x == y
+	(Single a) == (Range x y) = x <= a && a <= y
+	(Range x y) == (Single a) = x <= a && a <= y
+	(Range lx ux) == (Range ly uy) = (lx <= uy && ux >= ly) || (ly <= ux && uy >= lx)
+
+instance (Ord a) => Ord (Range a) where
+	(Single x) <= (Single y) = x <= y
+	(Single x) <= (Range y _) = x <= y
+	(Range _ x) <= (Single y) = x <= y
+	(Range _ x) <= (Range y _) = x <= y
+
+-- | A range consisting of a single value.
+single :: (Ord a) => a -> Range a
+single x = Single x
+
+-- | Construct a 'Range' from a lower and upper bound.
+range :: (Ord a) => a -> a -> Range a
+range l u
+	| l <= u = Range l u
+	| otherwise = Range u l 
+
+-- | Construct a 'Ranges' from a list of lower and upper bounds.
+ranges :: (Ord a) => [Range a] -> Ranges a
+ranges = Ranges . foldr (flip mergeRanges) []
+
+-- | Tests if a given range contains a particular value.
+inRange :: (Ord a) => a -> Range a -> Bool
+inRange x y = Single x == y
+
+-- | Tests if any of the ranges contains a particular value.
+inRanges :: (Ord a) => a -> Ranges a -> Bool
+inRanges x (Ranges xs) = or . map (x `inRange`) $ xs
+
+mergeRange :: (Ord a) => Range a -> Range a -> Either (Range a) (Range a)
+mergeRange x y =
+	if x == y
+		then Right $ minMax x y
+		else Left $ x
+
+minMax :: (Ord a) => Range a -> Range a -> Range a
+minMax (Range lx ux) (Range ly uy) = Range (min lx ly) (max ux uy)
+minMax (Single _) y = y
+minMax x@(Range _ _) (Single _) = x
+
+-- | Allows quick lookups using ranges.
+toSet :: (Ord a) => Ranges a -> Set (Range a)
+toSet (Ranges x) = Set.fromList x
+
+addRange :: (Ord a) => Ranges a -> Range a -> Ranges a
+addRange (Ranges x) = Ranges . mergeRanges x
+
+mergeRanges :: (Ord a) => [Range a] -> Range a -> [Range a]
+mergeRanges [] y = [y]
+mergeRanges (x:xs) y = case mergeRange x y of
+		Right z -> mergeRanges xs z
+		Left x -> x : (mergeRanges xs y)
+
+-- Remove all elements from A that are a member of B
+diffRange :: (Ord a) => Range a -> Range a -> [Range a]
+diffRange Empty b = [Empty]
+diffRange a Empty = [a]
+diffRange (Single a) (Single b) = if (a == b) 
+	then [Empty] 
+	else [(Single a)]
+diffRange (Single b) (Range l u) = if (l < b) && (b < u)
+	then [Empty]
+	else [(Single b)]
+diffRange (Range l u) (Single b) = if (l < b) && (b < u) 
+	then [(Range l b), (Range b u)]
+	else [(Range l u)]
+diffRange (Range al au) (Range bl bu) = 
+	if (bu <= al) || (au <= bl) then -- B is before or after A
+		[(Range al au)]
+	else if (bl <= al) && (bu < au) then -- B is to the left of A
+		[(Range bu au)]
+	else if (bl >  al) && (bu < au)  then -- B is inside A
+		[(Range al bl), (Range bu au)]
+	else if (bl < al) && (bu > au) then -- A is inside B
+		[Empty]
+	else if (bl >  al) && (bu >= au) then -- B is to the right of A
+		[(Range al bl)]
+	else -- A is equal to B
+		[Empty]
+
+diffRanges :: (Ord a) => Range a -> Ranges a -> Ranges a
+diffRanges r (Ranges d) = Ranges (diffRanges' r d) where
+	diffRanges' r [] = [r]
+	diffRanges' r (s:rest) = case (diffRange r s) of
+		[r'] -> diffRanges' r' rest
+		[b, r'] -> b:(diffRanges' r' rest)
