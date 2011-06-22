@@ -1,0 +1,9 @@
+# Build Directories #
+#####################
+dist
+
+
+# OS Generated #
+################
+.DS_STORE?
+
