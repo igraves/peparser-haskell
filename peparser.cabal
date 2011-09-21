@@ -1,0 +1,16 @@
+Name:			peparser
+Version:		0.1
+Description:	Extract the header information and sections from a PE file
+License:		BSD3
+License-File:	LICENSE
+Author:			Ian Graves
+Maintainer:		thegravian@gmail.com
+Build-Type:		Simple
+Cabal-Version:	>=1.2
+
+Library
+    Build-Depends:	haskell98, base >= 3 && < 5, bytestring >= 0.9.1, binary >= 0.5.0
+    Exposed-modules: 
+       Data.PE.Parser, 
+       Data.PE.Structures,
+       Data.PE.Utils

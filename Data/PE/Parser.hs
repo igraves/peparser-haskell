@@ -3,19 +3,21 @@ import Data.PE.Structures
 import Data.PE.Utils
 import Data.Word
 import qualified Data.ByteString.Lazy as B
---import Data.ByteString
 import Data.Binary.Get
 
 
 buildFile :: String -> IO (PEFile)
 buildFile fName = do
                       fbstring <- B.readFile fName
-                      let peheader = (runGet header fbstring)
-                      let mapSections = \sections -> (secBytes fbstring sections)
-                      let secTables = sectionTables peheader
-                      let binsections = map mapSections secTables
-                      --print peheader
-                      return (PEFile{peHeader=peheader, bSections=binsections})
+                      return $ buildFileFromBS fbstring 
+
+buildFileFromBS :: B.ByteString -> PEFile
+buildFileFromBS fbstring =
+                            let peheader = (runGet header fbstring) in
+                            let mapSections = \sections -> (secBytes fbstring sections) in
+                            let secTables = sectionTables peheader in
+                            let binsections = map mapSections secTables in
+                             PEFile{peHeader=peheader, bSections=binsections}
 
 header :: Get (PEHeader)
 header = do
@@ -36,13 +38,6 @@ header = do
 sections :: Int -> Get ([SectionTable])
 sections 0 = return []
 sections n = sections (n - 1) >>= \rest -> buildSectionTable >>= \item -> return (item:rest)
-
-{-
-secBytes :: [SectionTable] -> Get ([B.ByteString])
-secBytes []     = return []
-secBytes (x:xs) = let size    = fromIntegral (sizeOfRawData x) in
-                    getBytes size >>= \bytes -> secBytes xs >>= \rest -> return (B.fromChunks [bytes] : rest)
--}
 
 secBytes :: B.ByteString -> SectionTable -> BinSection
 secBytes bs sec = let offset = (fromIntegral . pointerToRawData) sec in
