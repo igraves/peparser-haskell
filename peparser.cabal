@@ -14,7 +14,7 @@ Cabal-Version:	>=1.6
 
 source-repository head
   type: git
-  location: git clone git://github.com/igraves/peparser-haskell.git
+  location: git://github.com/igraves/peparser-haskell.git
 
 
 Library
