@@ -5,16 +5,19 @@ import Numeric
 import Data.Binary
 --import System.Time
 
+-- |The over-arching container.  Holds the headers and a list of binary sections
 data PEFile = PEFile {
     peHeader :: PEHeader,
     bSections :: [BinSection]
 } deriving Show
 
+-- |The Binary Section container.  Holds names and containers.
 data BinSection = BinSection {
     secname :: String,
     binSection :: ByteString
 } deriving Show
 
+-- |The Header section, holds entries for each header in the PE File
 data PEHeader = PEHeader {
 	msdosHeader :: MSDOSHeader,
 	peSignature :: PESignature,

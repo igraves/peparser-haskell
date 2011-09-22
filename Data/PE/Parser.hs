@@ -1,17 +1,20 @@
-module Data.PE.Parser where
+module Data.PE.Parser (buildFile, buildFileFromBS) where
 import Data.PE.Structures
 import Data.PE.Utils
 import Data.Word
 import qualified Data.ByteString.Lazy as B
 import Data.Binary.Get
 
-
-buildFile :: String -> IO (PEFile)
+-- |Supply a filename of a PE file in the form of a string.  Returns a PEFile structure
+buildFile :: String -- ^The file name
+             -> IO (PEFile) -- ^The resulting data structure in the IO monad
 buildFile fName = do
                       fbstring <- B.readFile fName
                       return $ buildFileFromBS fbstring 
 
-buildFileFromBS :: B.ByteString -> PEFile
+-- |Supply a bytestring to be parsed as if it were a PE Binary.  Returns a PEFile structure
+buildFileFromBS :: B.ByteString  -- ^ByteString representing a PE file
+             -> PEFile -- ^The data structure returned
 buildFileFromBS fbstring =
                             let peheader = (runGet header fbstring) in
                             let mapSections = \sections -> (secBytes fbstring sections) in
