@@ -1,6 +1,7 @@
 Name:			peparser
 Version:		0.2
 Description:	Extract the header information and sections from a file of the PE object format.
+Synopsis: A parser for PE object files.
 License:		BSD3
 License-File:	LICENSE
 Author:			Ian Graves
@@ -9,7 +10,7 @@ Category: Data
 Stability: Experimental
 homepage: https://github.com/igraves/peparser-haskell
 Build-Type:		Simple
-Cabal-Version:	>=1.2
+Cabal-Version:	>=1.6
 
 source-repository head
   type: git
