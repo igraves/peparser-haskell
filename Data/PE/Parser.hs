@@ -2,7 +2,7 @@ module Data.PE.Parser (buildFile, buildFileFromBS) where
 import Data.PE.Structures
 import Data.PE.Utils
 import Data.Word
-import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString as B
 import Data.Binary.Get
 
 -- |Supply a filename of a PE file in the form of a string.  Returns a PEFile structure
