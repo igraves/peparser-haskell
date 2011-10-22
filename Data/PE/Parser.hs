@@ -4,6 +4,7 @@ import Data.PE.Utils
 import Data.Word
 import qualified Data.ByteString.Lazy as B
 import Data.Binary.Get
+import Data.Maybe
 
 -- |Supply a filename of a PE file in the form of a string.  Returns a PEFile structure
 buildFile :: String -- ^The file name
@@ -19,8 +20,10 @@ buildFileFromBS fbstring =
                             let peheader = (runGet header fbstring) in
                             let mapSections = \sections -> (secBytes fbstring sections) in
                             let secTables = sectionTables peheader in
-                            let binsections = map mapSections secTables in
-                             PEFile{peHeader=peheader, bSections=binsections}
+                            let binsections = map mapSections $ map fst secTables in
+                            let fixsec = \x -> (x, fromJust $ lookup (sectionHeaderName x) binsections) in
+                            let newsections = map fixsec $ map fst secTables in
+                             PEFile{peHeader=peheader{sectionTables=newsections}}
 
 header :: Get (PEHeader)
 header = do
@@ -35,20 +38,21 @@ header = do
                   datadirs <- buildDataDirectories
                   let numsections = fromIntegral (numberOfSections coff)
                   sectables <- sections numsections
+                  let sectables' = map (\x -> (x,B.pack [])) sectables
                   return PEHeader {msdosHeader=dosheader, peSignature=peSig, coffHeader=coff, standardFields=sfheader,
-                                  windowsSpecFields=wsfheader, dataDirectories=datadirs, sectionTables=sectables}
+                                  windowsSpecFields=wsfheader, dataDirectories=datadirs, sectionTables=sectables'}
 
 sections :: Int -> Get ([SectionTable])
 sections 0 = return []
 sections n = sections (n - 1) >>= \rest -> buildSectionTable >>= \item -> return (item:rest)
 
-secBytes :: B.ByteString -> SectionTable -> BinSection
+secBytes :: B.ByteString -> SectionTable -> (String,B.ByteString)
 secBytes bs sec = let offset = (fromIntegral . pointerToRawData) sec in
                   let size = (fromIntegral . sizeOfRawData) sec in
-                  let name = (byte64String . sectionHeaderName) sec in
+                  let name = sectionHeaderName sec in
                   let pbs = B.drop offset bs in
                   let sbs = B.take size pbs in
-                  BinSection {secname=name, binSection=sbs}
+                  (name, sbs)
 
 buildMSDOSHead :: Get (MSDOSHeader)
 buildMSDOSHead = do
@@ -227,7 +231,7 @@ buildSectionTable = do
                        numberOfRelocations' <- getWord16le
                        numberOfLineNumbers' <- getWord16le
                        secCharacteristics' <- getWord32le
-                       let header = SectionTable { sectionHeaderName=sectionHeaderName', virtualSize=virtualSize',
+                       let header = SectionTable { sectionHeaderName=(byte64String sectionHeaderName'), virtualSize=virtualSize',
                                                    virtualAddress=virtualAddress', sizeOfRawData=sizeOfRawData',
                                                    pointerToRawData=pointerToRawData', pointerToRelocations=pointerToRelocations',
                                                    pointerToLineNumbers=pointerToLineNumbers', numberOfRelocations=numberOfRelocations',

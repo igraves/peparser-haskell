@@ -7,8 +7,7 @@ import Data.Binary
 
 -- |The over-arching container.  Holds the headers and a list of binary sections
 data PEFile = PEFile {
-    peHeader :: PEHeader,
-    bSections :: [BinSection]
+    peHeader :: PEHeader
 } deriving Show
 
 -- |The Binary Section container.  Holds names and containers.
@@ -25,7 +24,7 @@ data PEHeader = PEHeader {
 	standardFields :: StandardFields,
 	windowsSpecFields :: WindowsSpecFields,
 	dataDirectories :: DataDirectories,
-	sectionTables :: [SectionTable]
+	sectionTables :: [(SectionTable,ByteString)]
 --	sectionbytes :: [ByteString]
 } deriving Show
 
@@ -197,7 +196,7 @@ data DataDirectories = DataDirectories {
 } deriving Show
 
 data SectionTable = SectionTable {
-	sectionHeaderName :: Word64,
+	sectionHeaderName :: String,
 	virtualSize :: Word32,
 	virtualAddress :: Word32,
 	sizeOfRawData :: Word32,
