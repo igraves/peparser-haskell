@@ -1,5 +1,5 @@
 Name:			peparser
-Version:		0.3
+Version:		0.33
 Description:	Extract the header information and sections from a file of the PE object format.
 Synopsis: A parser for PE object files.
 License:		BSD3

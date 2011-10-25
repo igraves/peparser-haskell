@@ -1,4 +1,4 @@
-module Data.PE.Parser (buildFile, buildFileFromBS) where
+module Data.PE.Parser (buildFile, buildFileFromBS, buildObject, buildObjectFromBS) where
 import Data.PE.Structures
 import Data.PE.Utils
 import Data.Word
@@ -25,6 +25,29 @@ buildFileFromBS fbstring =
                             let newsections = map fixsec $ map fst secTables in
                              PEFile{peHeader=peheader{sectionTables=newsections}}
 
+buildObject :: String
+             -> IO (PEObject)
+buildObject fName = B.readFile fName >>= \fbstring -> return $ buildObjectFromBS fbstring
+
+buildObjectFromBS :: B.ByteString
+              -> PEObject
+buildObjectFromBS fbstring = runGet (do
+                               dosheader <- buildMSDOSHead
+                               bytes <- bytesRead
+                               let peoffset = (fromIntegral (offset dosheader)) - (fromIntegral bytes)
+                               skip peoffset
+                               peSig <- buildPESignature
+                               sfheader <- buildSFHeader
+                               wsfheader <- buildWSFHeader
+                               coff <- buildCOFFHeader
+                               let numsections = fromIntegral (numberOfSections coff)
+                               let mapSections = \sections -> (secBytes fbstring sections)
+                               sectables <- sections numsections
+                               let binsections = map mapSections $ sectables 
+                               let fixsec = \x -> (x, fromJust $ lookup (sectionHeaderName x) binsections) 
+                               let newsections = map fixsec $ sectables in
+                                 return $ PEObj { peObjHeader=(PEObjHdr coff newsections) }) fbstring
+
 header :: Get (PEHeader)
 header = do
                   dosheader <- buildMSDOSHead
@@ -35,7 +58,7 @@ header = do
                   coff <- buildCOFFHeader
                   sfheader <- buildSFHeader
                   wsfheader <- buildWSFHeader
-                  datadirs <- buildDataDirectories
+                  datadirs <- buildDataDirectories (fromIntegral $ numberOfRVAandSizes wsfheader)
                   let numsections = fromIntegral (numberOfSections coff)
                   sectables <- sections numsections
                   let sectables' = map (\x -> (x,B.pack [])) sectables
@@ -170,53 +193,14 @@ buildWSFHeader = do
 
 
 
-buildDataDirectories :: Get (DataDirectories)
-buildDataDirectories = do
-                        edataOffset' <- getWord32le
-                        edataSize' <- getWord32le
-                        idataOffset' <- getWord32le
-                        idataSize' <- getWord32le
-                        rsrcOffset' <- getWord32le
-                        rsrcSize' <- getWord32le
-                        pdataOffset' <- getWord32le
-                        pdataSize' <- getWord32le
-                        attrCertOffset' <- getWord32le
-                        attrCertSize' <- getWord32le
-                        relocOffset' <- getWord32le
-                        relocSize' <- getWord32le
-                        debugOffset' <- getWord32le
-                        debugSize' <- getWord32le
-                        architecture1' <- getWord32le
-                        architecture2' <- getWord32le
-                        globalPtrOffset' <- getWord32le
-                        getWord32le
-                        tlsOffset' <- getWord32le
-                        tlsSize' <- getWord32le
-                        loadCfgTableOffset' <- getWord32le
-                        loadConfigTableSize' <- getWord32le
-                        boundImportTableOffset' <- getWord32le
-                        boundImportTableSize' <- getWord32le
-                        importAddressTableOffset' <- getWord32le
-                        importAddressTableSize' <- getWord32le
-                        delayImportDescriptorOffset' <- getWord32le
-                        delayImportDescriptorSize' <- getWord32le
-                        clrRuntimeHeaderOffset' <- getWord32le
-                        clrRuntimeHeaderSize' <- getWord32le
-                        getWord32le
-                        getWord32le
-                        let header = DataDirectories { edataOffset=edataOffset', edataSize=edataOffset', idataOffset=idataOffset',
-                                                       idataSize=idataSize', rsrcOffset=rsrcOffset', rsrcSize=rsrcSize', pdataOffset=pdataOffset',
-                                                       pdataSize=pdataSize', attrCertOffset=attrCertOffset', attrCertSize=attrCertSize', 
-                                                       relocOffset=relocOffset', relocSize=relocSize', debugOffset=debugOffset',
-                                                       debugSize=debugSize', architecture1=architecture1', architecture2=architecture2',
-                                                       globalPtrOffset=globalPtrOffset', tlsOffset=tlsOffset', tlsSize=tlsSize', 
-                                                       loadCfgTableOffset=loadCfgTableOffset', loadConfigTableSize=loadConfigTableSize',
-                                                       boundImportTableOffset=boundImportTableOffset', boundImportTableSize=boundImportTableSize',
-                                                       importAddressTableOffset=importAddressTableOffset', importAddressTableSize=importAddressTableSize',
-                                                       delayImportDescriptorOffset=delayImportDescriptorOffset', delayImportDescriptorSize=delayImportDescriptorSize',
-                                                       clrRuntimeHeaderOffset=clrRuntimeHeaderOffset', clrRuntimeHeaderSize=clrRuntimeHeaderSize'}
-                        return header
-
+buildDataDirectories :: Int -> Get ([DirectoryEntry])
+buildDataDirectories 0 = return []
+buildDataDirectories i = do
+                            addr <- getWord32le
+                            size <- getWord32le
+                            let entry = DirEntry {virtualAddr=addr, entrySize=size}
+                            rest <- buildDataDirectories (i-1)
+                            return $ entry : rest
 
 
 buildSectionTable :: Get (SectionTable)

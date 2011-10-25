@@ -22,7 +22,7 @@ breakWord64 word = let x0 = (byte64 0 word) in
                    (cleanWord (x0:x1:x2:x3:x4:x5:x6:x7:[]))
 
 cleanWord :: [Word8] -> [Word8]
-cleanword [] = []
+cleanWord [] = []
 cleanWord (x:ws) = if x == 0 then [] else [x] ++ (cleanWord ws)
 
 --Stolen from http://www.mail-archive.com/haskell-cafe@haskell.org/msg69701.html

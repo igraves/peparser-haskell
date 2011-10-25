@@ -10,10 +10,19 @@ data PEFile = PEFile {
     peHeader :: PEHeader
 } deriving Show
 
+data PEObject = PEObj {
+    peObjHeader :: PEObjectHeader
+} deriving Show
+
 -- |The Binary Section container.  Holds names and containers.
 data BinSection = BinSection {
     secname :: String,
     binSection :: ByteString
+} deriving Show
+
+data PEObjectHeader = PEObjHdr {
+  objcoffhdr :: COFFHeader,
+  objsectionTables :: [(SectionTable,ByteString)]
 } deriving Show
 
 -- |The Header section, holds entries for each header in the PE File
@@ -23,7 +32,7 @@ data PEHeader = PEHeader {
 	coffHeader :: COFFHeader,
 	standardFields :: StandardFields,
 	windowsSpecFields :: WindowsSpecFields,
-	dataDirectories :: DataDirectories,
+	dataDirectories :: [DirectoryEntry],
 	sectionTables :: [(SectionTable,ByteString)]
 --	sectionbytes :: [ByteString]
 } deriving Show
@@ -160,39 +169,9 @@ instance Show WindowsSpecFields where
 		++"RVA: "++(show (numberOfRVAandSizes hdr))++"\n"
 
 
-data DataDirectories = DataDirectories {
-	edataOffset :: Word32,
-	edataSize :: Word32,
-	idataOffset :: Word32,
-	idataSize :: Word32,
-	rsrcOffset :: Word32,
-	rsrcSize :: Word32,
-	pdataOffset :: Word32,
-	pdataSize :: Word32,
-	attrCertOffset :: Word32,
-	attrCertSize :: Word32,
-	relocOffset :: Word32,
-	relocSize :: Word32,
-	debugOffset :: Word32,
-	debugSize :: Word32,
-	architecture1 :: Word32, --should only 0x0 maybe?
-	architecture2 :: Word32, --should only 0x0 maybe
-	globalPtrOffset :: Word32,
-	-- Word32 must be zero here
-	tlsOffset :: Word32,
-	tlsSize :: Word32,
-	loadCfgTableOffset :: Word32,
-	loadConfigTableSize :: Word32,
-	boundImportTableOffset :: Word32,
-	boundImportTableSize :: Word32,
-	importAddressTableOffset :: Word32,
-	importAddressTableSize :: Word32,
-	delayImportDescriptorOffset :: Word32,
-	delayImportDescriptorSize :: Word32,
-	clrRuntimeHeaderOffset :: Word32,
-	clrRuntimeHeaderSize :: Word32
-	-- Word32 zero
-	-- Word32 zero
+data DirectoryEntry = DirEntry {
+  virtualAddr :: Word32,
+  entrySize :: Word32
 } deriving Show
 
 data SectionTable = SectionTable {
