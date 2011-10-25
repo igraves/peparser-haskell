@@ -1,4 +1,4 @@
-module Data.PE.Parser (buildFile, buildFileFromBS, buildObject, buildObjectFromBS) where
+module Data.PE.Parser (buildFile, buildFileFromBS) where
 import Data.PE.Structures
 import Data.PE.Utils
 import Data.Word
@@ -25,29 +25,6 @@ buildFileFromBS fbstring =
                             let newsections = map fixsec $ map fst secTables in
                              PEFile{peHeader=peheader{sectionTables=newsections}}
 
-buildObject :: String
-             -> IO (PEObject)
-buildObject fName = B.readFile fName >>= \fbstring -> return $ buildObjectFromBS fbstring
-
-buildObjectFromBS :: B.ByteString
-              -> PEObject
-buildObjectFromBS fbstring = runGet (do
-                               dosheader <- buildMSDOSHead
-                               bytes <- bytesRead
-                               let peoffset = (fromIntegral (offset dosheader)) - (fromIntegral bytes)
-                               skip peoffset
-                               peSig <- buildPESignature
-                               sfheader <- buildSFHeader
-                               wsfheader <- buildWSFHeader
-                               coff <- buildCOFFHeader
-                               let numsections = fromIntegral (numberOfSections coff)
-                               let mapSections = \sections -> (secBytes fbstring sections)
-                               sectables <- sections numsections
-                               let binsections = map mapSections $ sectables 
-                               let fixsec = \x -> (x, fromJust $ lookup (sectionHeaderName x) binsections) 
-                               let newsections = map fixsec $ sectables in
-                                 return $ PEObj { peObjHeader=(PEObjHdr coff newsections) }) fbstring
-
 header :: Get (PEHeader)
 header = do
                   dosheader <- buildMSDOSHead
@@ -57,7 +34,7 @@ header = do
                   peSig <- buildPESignature
                   coff <- buildCOFFHeader
                   sfheader <- buildSFHeader
-                  wsfheader <- buildWSFHeader
+                  wsfheader <- if (standardSig sfheader == 0x10B) then buildWSFHeader else buildWSFPlus
                   datadirs <- buildDataDirectories (fromIntegral $ numberOfRVAandSizes wsfheader)
                   let numsections = fromIntegral (numberOfSections coff)
                   sectables <- sections numsections
@@ -148,12 +125,21 @@ buildSFHeader = do
                    sizeOfUninitData' <- getWord32le
                    addressOfEntryPoint' <- getWord32le
                    baseOfCode' <- getWord32le
-                   baseOfData' <- getWord32le
-                   let header = StandardFields { standardSig=standardSig', lnMajorVersion=lnMajorVersion',
-                                               lnMinorVersion=lnMinorVersion', sizeOfCode=sizeOfCode', sizeOfInitializedData=sizeOfInitializedData',
-                                               sizeOfUninitData=sizeOfUninitData', addressOfEntryPoint=addressOfEntryPoint',
-                                               baseOfCode=baseOfCode', baseOfData=baseOfData'}
-                   return header
+                   case (standardSig') of
+                          0x10B -> do 
+                                       baseOfData' <- getWord32le
+                                       let header = StandardFields { standardSig=standardSig', lnMajorVersion=lnMajorVersion',
+                                                                   lnMinorVersion=lnMinorVersion', sizeOfCode=sizeOfCode', sizeOfInitializedData=sizeOfInitializedData',
+                                                                   sizeOfUninitData=sizeOfUninitData', addressOfEntryPoint=addressOfEntryPoint',
+                                                                   baseOfCode=baseOfCode', baseOfData=baseOfData'}
+                                       return header
+                          0x20B -> do
+                                       let header = SFPlus { standardSig=standardSig', lnMajorVersion=lnMajorVersion',
+                                                                   lnMinorVersion=lnMinorVersion', sizeOfCode=sizeOfCode', sizeOfInitializedData=sizeOfInitializedData',
+                                                                   sizeOfUninitData=sizeOfUninitData', addressOfEntryPoint=addressOfEntryPoint',
+                                                                   baseOfCode=baseOfCode'}
+                                       return header
+                          _ -> error "Unrecognized PE format Magic Number"
 
 
 
@@ -191,6 +177,39 @@ buildWSFHeader = do
                                                      sizeOfHeapCommit=sizeOfHeapCommit', loaderFlags=loaderFlags', numberOfRVAandSizes=numberOfRVAandSizes' }
                     return header
 
+buildWSFPlus :: Get (WindowsSpecFields)
+buildWSFPlus = do
+                    imageBase' <- getWord64le
+                    sectionAlignment' <- getWord32le
+                    fileAlignment' <- getWord32le
+                    majorOSVersion' <- getWord16le
+                    minorOSVersion' <- getWord16le
+                    majorImageVersion' <- getWord16le
+                    minorImageVersion' <- getWord16le
+                    majorSubSystemVersion' <- getWord16le
+                    minorSubSystemVersion' <- getWord16le
+                    win32VersionValue' <- getWord32le
+                    sizeOfImage' <- getWord32le
+                    sizeOfHeaders' <- getWord32le
+                    checkSum32' <- getWord32le
+                    checkSum16' <- getWord16le
+                    dllCharacteristics' <- getWord16le
+                    sizeOfStackReserve' <- getWord64le
+                    sizeOfStackCommit' <- getWord64le
+                    sizeOfHeapReserve' <- getWord64le
+                    sizeOfHeapCommit' <- getWord64le
+                    loaderFlags' <- getWord32le
+                    numberOfRVAandSizes' <- getWord32le
+                    let header = WSFPlus { imgBase=imageBase', sectionAlignment=sectionAlignment',
+                                                     fileAlignment=fileAlignment', majorOSVersion=majorOSVersion',
+                                                     minorOSVersion=minorOSVersion', majorImageVersion=majorImageVersion',
+                                                     minorImageVersion=minorImageVersion', majorSubSystemVersion=majorSubSystemVersion',
+                                                     minorSubSystemVersion=minorSubSystemVersion', win32VersionValue=win32VersionValue',
+                                                     sizeOfImage=sizeOfImage', sizeOfHeaders=sizeOfHeaders', checkSum32=checkSum32',
+                                                     checkSum16=checkSum16', dllCharacteristics=dllCharacteristics', szOfStackReserve=sizeOfStackReserve',
+                                                     szOfStackCommit=sizeOfStackCommit', szOfHeapReserve=sizeOfHeapReserve', 
+                                                     szOfHeapCommit=sizeOfHeapCommit', loaderFlags=loaderFlags', numberOfRVAandSizes=numberOfRVAandSizes' }
+                    return header
 
 
 buildDataDirectories :: Int -> Get ([DirectoryEntry])

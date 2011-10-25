@@ -103,7 +103,7 @@ instance Show COFFHeader where
 		++"COFF Characteristics: 0x"++(showHex (coffCharacteristics hdr) "")++"\n"
 
 data StandardFields = StandardFields {
-	standardSig :: Word16, -- Should be 0x10B
+	standardSig :: Word16, -- Should be 0x10B or 0x20B if PE32+
 	lnMajorVersion :: Word8,
 	lnMinorVersion :: Word8,
 	sizeOfCode :: Word32,
@@ -112,7 +112,15 @@ data StandardFields = StandardFields {
 	addressOfEntryPoint :: Word32,
 	baseOfCode :: Word32,
 	baseOfData :: Word32
-}
+} | SFPlus { standardSig :: Word16, 
+              lnMajorVersion :: Word8,
+              lnMinorVersion :: Word8,
+              sizeOfCode :: Word32,
+              sizeOfInitializedData :: Word32,
+              sizeOfUninitData :: Word32,
+              addressOfEntryPoint :: Word32, 
+	            baseOfCode :: Word32 }
+
 instance Show StandardFields where
 	show sf = "Signature: 0x"++(showHex (standardSig sf) "")++"\n"
 		++"Linker Major Version: "++(show (lnMajorVersion sf))++"\n"
@@ -122,7 +130,7 @@ instance Show StandardFields where
 		++"Size of Un-initialized Data: "++(show (sizeOfUninitData sf))++"\n"
 		++"Entry Point Address: 0x"++(showHex (addressOfEntryPoint sf) "")++"\n"
 		++"Code base Address: 0x"++(showHex (baseOfCode sf) "")++"\n"
-		++"Data base Address: 0x"++(showHex (baseOfData sf) "")++"\n"
+		-- ++"Data base Address: 0x"++(showHex (baseOfData sf) "")++"\n"
 
 data WindowsSpecFields = WindowsSpecFields {
 	imageBase :: Word32,
@@ -146,7 +154,28 @@ data WindowsSpecFields = WindowsSpecFields {
 	sizeOfHeapCommit :: Word32,
 	loaderFlags :: Word32,
 	numberOfRVAandSizes :: Word32
-}
+} | WSFPlus { imgBase :: Word64,
+            sectionAlignment :: Word32,
+            fileAlignment :: Word32,
+            majorOSVersion :: Word16,
+            minorOSVersion :: Word16,
+            majorImageVersion :: Word16,
+            minorImageVersion :: Word16,
+            majorSubSystemVersion :: Word16,
+            minorSubSystemVersion :: Word16,
+            win32VersionValue :: Word32,
+            sizeOfImage :: Word32,
+            sizeOfHeaders :: Word32,
+            checkSum32 :: Word32,
+            checkSum16 :: Word16,
+            dllCharacteristics :: Word16,
+            szOfStackReserve :: Word64,
+            szOfStackCommit :: Word64,
+            szOfHeapReserve :: Word64,
+            szOfHeapCommit :: Word64,
+            loaderFlags :: Word32,
+            numberOfRVAandSizes :: Word32 }
+
 instance Show WindowsSpecFields where
 	show hdr = "Image Base: 0x"++(showHex (imageBase hdr) "")++"\n"
 		++"Section Alignment: 0x"++(showHex (sectionAlignment hdr) "")++"\n"
