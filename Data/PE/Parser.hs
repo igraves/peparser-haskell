@@ -105,7 +105,7 @@ buildCOFFHeader = do
                     numberOfSymbols' <- getWord32le
                     sizeofOptionalHeaders' <- getWord16le
                     coffCharacteristics' <- getWord16le
-                    let header = COFFHeader { targetMachine=targetMachine', numberOfSections=numberOfSections',
+                    let header = COFFHeader { targetMachine=(mapMachine targetMachine'), numberOfSections=numberOfSections',
                                               timeDateStamp=timeDateStamp', pointerToSymbolTable=pointerToSymbolTable',
                                               numberOfSymbols=numberOfSymbols', sizeofOptionalHeaders=sizeofOptionalHeaders',
                                               coffCharacteristics=coffCharacteristics'}

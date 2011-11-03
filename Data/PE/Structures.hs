@@ -59,33 +59,33 @@ data MSDOSHeader = MSDOSHeader {
 	offset :: Word32
 } 
 instance Show MSDOSHeader where
-	show header = "Signature: "++((show.encode) (signature header))++"\n"
-		++"Last Page Size: "++(show (lastsize header))++"\n"
-		++"Number of Pages: "++(show (pagesInFile header))++"\n"
-		++"Relocations: "++(show (relocations header))++"\n"
-		++"Heaser Size in Paragraphs: "++(show (headerSizeInParagraph header))++"\n"
-		++"Min Extra Paragraphs: "++(show (minExtraParagraphs header))++"\n"
-		++"Max Extra Paragraphs: "++(show (maxExtraParagraphs header))++"\n"
-		++"Stack Segment: 0x"++(showHex (ss header) "")++"\n"
-		++"Stack Pointer: 0x"++(showHex (sp header) "")++"\n"
-		++"File checksum: "++(show (checksum header))++"\n"
-		++"Code Segment: "++(show (cs header))++"\n"
-		++"Instruction Pointer: "++(show (ip header))++"\n"
-		++"Relocation Offset: "++(show (relocTableOffset header))++"\n"
-		++"Overlay Number: "++(show (overlayNumber header))++"\n"
-		++"OEM Identifier: 0x"++(showHex (oemIdentifier header) "")++"\n"
-		++"OEM Information: 0x"++(showHex (oemInformation header) "")++"\n"
-		++"PE Header Offset: "++(show (offset header))++"\n"
+	show header = "Signature: " ++ (show.encode $ signature header) ++ "\n"
+		++ "Last Page Size: " ++ (show $ lastsize header) ++ "\n"
+		++ "Number of Pages: " ++ (show $ pagesInFile header) ++ "\n"
+		++ "Relocations: " ++ (show $ relocations header) ++ "\n"
+		++ "Header Size in Paragraphs: " ++ (show $ headerSizeInParagraph header) ++ "\n"
+		++ "Min Extra Paragraphs: " ++ (show $ minExtraParagraphs header) ++ "\n"
+		++ "Max Extra Paragraphs: " ++ (show $ maxExtraParagraphs header) ++ "\n"
+		++ "Stack Segment: 0x" ++ (showHex (ss header) "") ++ "\n"
+		++ "Stack Pointer: 0x" ++ (showHex (sp header) "") ++ "\n"
+		++ "File checksum: " ++ (show $ checksum header) ++ "\n"
+		++ "Code Segment: " ++ (show $ cs header) ++ "\n"
+		++ "Instruction Pointer: " ++ (show $ ip header) ++ "\n"
+		++ "Relocation Offset: " ++ (show $ relocTableOffset header) ++ "\n"
+		++ "Overlay Number: " ++ (show $ overlayNumber header) ++ "\n"
+		++ "OEM Identifier: 0x" ++ (showHex (oemIdentifier header) "") ++ "\n"
+		++ "OEM Information: 0x" ++(showHex (oemInformation header) "") ++ "\n"
+		++ "PE Header Offset: " ++ (show $ offset header) ++ "\n"
 		
 
 data PESignature = PESignature {
 	pesignature :: Word32 --0x00004550
 } 
 instance Show PESignature where
-	show (PESignature sig) = "PE-Signature: 0x"++(showHex sig "")++"\n"
+	show (PESignature sig) = "PE-Signature: 0x" ++ (showHex sig "") ++ "\n"
 
 data COFFHeader = COFFHeader {
-	targetMachine :: Word16,
+	targetMachine :: MachineType,
 	numberOfSections :: Word16,  --IMPORTANT
 	timeDateStamp :: Word32,
 	pointerToSymbolTable :: Word32, --0 for image
@@ -94,13 +94,13 @@ data COFFHeader = COFFHeader {
 	coffCharacteristics :: Word16
 }
 instance Show COFFHeader where
-	show hdr = "Target Machine: 0x"++(showHex (targetMachine hdr) "")++"\n"
-		++"Number of Sections: "++(show (numberOfSections hdr)) ++"\n"
-		++"Timestamp: "++(show (((fromIntegral.timeDateStamp) hdr)))++"\n"
-		++"Symbol Table Pointer: 0x"++(showHex (pointerToSymbolTable hdr) "")++"\n"
-		++"Number of Symbols: "++(show (numberOfSymbols hdr))++"\n"
-		++"Size of Optional Headers: "++(show (sizeofOptionalHeaders hdr))++"\n"
-		++"COFF Characteristics: 0x"++(showHex (coffCharacteristics hdr) "")++"\n"
+	show hdr = "Target Machine: " ++ (show $ targetMachine hdr) ++"\n"
+		++ "Number of Sections: " ++ (show (numberOfSections hdr)) ++"\n"
+		++ "Timestamp: " ++ (show $ fromIntegral . timeDateStamp $ hdr) ++ "\n"
+		++ "Symbol Table Pointer: 0x" ++ (showHex (pointerToSymbolTable hdr) "") ++ "\n"
+		++ "Number of Symbols: " ++ (show $ numberOfSymbols hdr) ++ "\n"
+		++ "Size of Optional Headers: " ++ (show $ sizeofOptionalHeaders hdr) ++ "\n"
+		++ "COFF Characteristics: 0x" ++ (showHex (coffCharacteristics hdr) "") ++ "\n"
 
 data StandardFields = StandardFields {
 	standardSig :: Word16, -- Should be 0x10B or 0x20B if PE32+
@@ -122,14 +122,14 @@ data StandardFields = StandardFields {
 	            baseOfCode :: Word32 }
 
 instance Show StandardFields where
-	show sf = "Signature: 0x"++(showHex (standardSig sf) "")++"\n"
-		++"Linker Major Version: "++(show (lnMajorVersion sf))++"\n"
-		++"Linker Minor Version: "++(show (lnMinorVersion sf))++"\n"
-		++"Size of Code: "++(show (sizeOfCode sf))++"\n"
-		++"Size of Initialized Data: "++(show (sizeOfInitializedData sf))++"\n"
-		++"Size of Un-initialized Data: "++(show (sizeOfUninitData sf))++"\n"
-		++"Entry Point Address: 0x"++(showHex (addressOfEntryPoint sf) "")++"\n"
-		++"Code base Address: 0x"++(showHex (baseOfCode sf) "")++"\n"
+	show sf = "Signature: 0x" ++ (showHex (standardSig sf) "") ++ "\n"
+		++ "Linker Major Version: " ++ (show $ lnMajorVersion sf) ++ "\n"
+		++ "Linker Minor Version: " ++ (show $ lnMinorVersion sf) ++ "\n"
+		++ "Size of Code: " ++ (show $ sizeOfCode sf) ++ "\n"
+		++ "Size of Initialized Data: " ++ (show $ sizeOfInitializedData sf) ++ "\n"
+		++ "Size of Un-initialized Data: " ++ (show $ sizeOfUninitData sf) ++ "\n"
+		++ "Entry Point Address: 0x" ++ (showHex (addressOfEntryPoint sf) "") ++ "\n"
+		++ "Code base Address: 0x" ++ (showHex (baseOfCode sf) "") ++ "\n"
 		-- ++"Data base Address: 0x"++(showHex (baseOfData sf) "")++"\n"
 
 data WindowsSpecFields = WindowsSpecFields {
@@ -177,25 +177,25 @@ data WindowsSpecFields = WindowsSpecFields {
             numberOfRVAandSizes :: Word32 }
 
 instance Show WindowsSpecFields where
-	show hdr = "Image Base: 0x"++(showHex (imageBase hdr) "")++"\n"
-		++"Section Alignment: 0x"++(showHex (sectionAlignment hdr) "")++"\n"
-		++"File Alignment: 0x"++(showHex (fileAlignment hdr) "")++"\n"
-		++"Major OS Version: "++(show (majorOSVersion hdr))++"\n"
-		++"Minor OS Version: "++(show (minorOSVersion hdr))++"\n"
-		++"Major Subsystem Version: "++(show (majorSubSystemVersion hdr))++"\n"
-		++"Minor Subsystem Version: "++(show (minorSubSystemVersion hdr))++"\n"
-		++"Win 32 Version Value: "++(show (win32VersionValue hdr))++"\n"
-		++"Size of Image: "++(show (sizeOfImage hdr))++"\n"
-		++"Size of Headers: "++(show (sizeOfHeaders hdr))++"\n"
-		++"Checksum 32: "++(show (checkSum32 hdr))++"\n"
-		++"Checksum 15: "++(show (checkSum16 hdr))++"\n"
-		++"DLL Characteristics: 0x"++(showHex (dllCharacteristics hdr) "")++"\n"
-		++"Size of Stack Reserved: "++(show (sizeOfStackReserve hdr))++"\n"
-		++"Size of Stack Commit: "++(show (sizeOfStackCommit hdr))++"\n"
-		++"Size of Heap Reserved: "++(show (sizeOfHeapReserve hdr))++"\n"
-		++"Size of Heap Commit: "++(show (sizeOfHeapCommit hdr))++"\n"
-		++"Loader Flags: 0x"++(showHex (loaderFlags hdr) "")++"\n"
-		++"RVA: "++(show (numberOfRVAandSizes hdr))++"\n"
+	show hdr = "Image Base: 0x" ++ (showHex (imageBase hdr) "") ++ "\n"
+		++ "Section Alignment: 0x" ++ (showHex (sectionAlignment hdr) "") ++ "\n"
+		++ "File Alignment: 0x" ++ (showHex (fileAlignment hdr) "") ++ "\n"
+		++ "Major OS Version: " ++ (show $ majorOSVersion hdr) ++ "\n"
+		++ "Minor OS Version: " ++ (show $ minorOSVersion hdr) ++ "\n"
+		++ "Major Subsystem Version: " ++ (show $ majorSubSystemVersion hdr) ++ "\n"
+		++ "Minor Subsystem Version: " ++ (show $ minorSubSystemVersion hdr) ++ "\n"
+		++ "Win 32 Version Value: " ++ (show $ win32VersionValue hdr) ++ "\n"
+		++ "Size of Image: " ++ (show $ sizeOfImage hdr) ++ "\n"
+		++ "Size of Headers: " ++ (show $ sizeOfHeaders hdr) ++ "\n"
+		++ "Checksum 32: " ++ (show $ checkSum32 hdr) ++ "\n"
+		++ "Checksum 15: " ++ (show $ checkSum16 hdr) ++ "\n"
+		++ "DLL Characteristics: 0x" ++ (showHex (dllCharacteristics hdr) "") ++ "\n"
+		++ "Size of Stack Reserved: " ++ (show $ sizeOfStackReserve hdr) ++ "\n"
+		++ "Size of Stack Commit: " ++ (show $ sizeOfStackCommit hdr) ++ "\n"
+		++ "Size of Heap Reserved: " ++ (show $ sizeOfHeapReserve hdr) ++ "\n"
+		++ "Size of Heap Commit: " ++ (show $ sizeOfHeapCommit hdr) ++ "\n"
+		++ "Loader Flags: 0x" ++ (showHex (loaderFlags hdr) "") ++ "\n"
+		++ "RVA: " ++ (show $ numberOfRVAandSizes hdr) ++ "\n"
 
 
 data DirectoryEntry = DirEntry {
@@ -215,3 +215,30 @@ data SectionTable = SectionTable {
 	numberOfLineNumbers :: Word16,
 	secCharacteristics :: Word32
 } deriving Show
+
+data MachineType = UNKNOWN | AM33 | AMD64 | ARM | ARMV7 | EBC | I386 | IA64 | M32R | MIPS16 | MIPSFPU | MIPSFPU16 |
+                    PPC | PPCFP | R4000 | SH3 | SH3DSP | SH4 | SH5 | THUMB | WCE | INVALID deriving Show
+
+mapMachine :: Word16 -> MachineType
+mapMachine w = case w of
+                   0x00 -> UNKNOWN
+                   0x1d3 -> AM33
+                   0x8664 -> AMD64
+                   0x1c0 -> ARM
+                   0x1c4 -> ARMV7
+                   0xebc -> EBC
+                   0x14c -> I386
+                   0x200 -> IA64
+                   0x9041 -> M32R
+                   0x266 -> MIPS16
+                   0x366 -> MIPSFPU
+                   0x466 -> MIPSFPU16
+                   0x1f0 -> PPC
+                   0x1f1 -> PPCFP
+                   0x166 -> R4000
+                   0x1a2 -> SH3
+                   0x1a3 -> SH3DSP
+                   0x1a6 -> SH4
+                   0x1a8 -> SH5
+                   0x1c2 -> THUMB
+                   0x169 -> WCE
