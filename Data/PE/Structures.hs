@@ -1,8 +1,11 @@
 module Data.PE.Structures where
 import Data.Word
+import Data.PE.Utils
 import Data.ByteString.Lazy
 import Numeric
 import Data.Binary
+import Data.Binary.Get
+import Data.Char
 --import System.Time
 
 -- |The over-arching container.  Holds the headers and a list of binary sections
@@ -176,6 +179,9 @@ data WindowsSpecFields = WindowsSpecFields {
             loaderFlags :: Word32,
             numberOfRVAandSizes :: Word32 }
 
+--instance Binary WindowsSpecFields where
+--  get = 
+
 instance Show WindowsSpecFields where
 	show hdr = "Image Base: 0x" ++ (showHex (imageBase hdr) "") ++ "\n"
 		++ "Section Alignment: 0x" ++ (showHex (sectionAlignment hdr) "") ++ "\n"
@@ -203,6 +209,14 @@ data DirectoryEntry = DirEntry {
   entrySize :: Word32
 } deriving Show
 
+instance Binary DirectoryEntry where
+  get = do
+          addr <- getWord32le
+          size <- getWord32le
+          let entry = DirEntry {virtualAddr=addr, entrySize=size}
+          return $ entry 
+  put x = error "Serialization of DirectoryEntry not supported."
+
 data SectionTable = SectionTable {
 	sectionHeaderName :: String,
 	virtualSize :: Word32,
@@ -216,8 +230,41 @@ data SectionTable = SectionTable {
 	secCharacteristics :: Word32
 } deriving Show
 
+instance Binary SectionTable where
+  get = do 
+           sectionHeaderName' <- getWord64le
+           virtualSize' <- getWord32le
+           virtualAddress' <- getWord32le
+           sizeOfRawData' <- getWord32le
+           pointerToRawData' <- getWord32le
+           pointerToRelocations' <- getWord32le
+           pointerToLineNumbers' <- getWord32le
+           numberOfRelocations' <- getWord16le
+           numberOfLineNumbers' <- getWord16le
+           secCharacteristics' <- getWord32le
+           let header = SectionTable { sectionHeaderName=(byte64String sectionHeaderName'), virtualSize=virtualSize',
+                                       virtualAddress=virtualAddress', sizeOfRawData=sizeOfRawData',
+                                       pointerToRawData=pointerToRawData', pointerToRelocations=pointerToRelocations',
+                                       pointerToLineNumbers=pointerToLineNumbers', numberOfRelocations=numberOfRelocations',
+                                       numberOfLineNumbers=numberOfLineNumbers', secCharacteristics=secCharacteristics'}
+           return header
+       
+  put x = error "SectionTable serialization not supported"
+
+         
+
+
 data MachineType = UNKNOWN | AM33 | AMD64 | ARM | ARMV7 | EBC | I386 | IA64 | M32R | MIPS16 | MIPSFPU | MIPSFPU16 |
-                    PPC | PPCFP | R4000 | SH3 | SH3DSP | SH4 | SH5 | THUMB | WCE | INVALID deriving Show
+                    PPC | PPCFP | R4000 | SH3 | SH3DSP | SH4 | SH5 | THUMB | WCE | INVALID deriving (Show)
+
+
+instance Binary MachineType where
+  get = do
+          x <- getWord16le
+          return $ mapMachine x
+  put x = error "Serialization of MachineType not supported"
+
+
 
 mapMachine :: Word16 -> MachineType
 mapMachine w = case w of
@@ -242,3 +289,10 @@ mapMachine w = case w of
                    0x1a8 -> SH5
                    0x1c2 -> THUMB
                    0x169 -> WCE
+
+getAStr :: Get String
+getAStr = do
+            x <- getWord8
+            case (x == 0x0) of
+                  True  -> return []
+                  False -> getAStr >>= \xs -> return ((chr $ fromIntegral x) : xs) 
