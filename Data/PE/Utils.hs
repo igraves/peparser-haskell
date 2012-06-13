@@ -1,8 +1,6 @@
 module Data.PE.Utils where
 import Data.Word
-import Data.ByteString.Lazy 
 import Data.ByteString.Internal
-import Data.Binary.Get
 import Data.Bits
 
 --8byte string name

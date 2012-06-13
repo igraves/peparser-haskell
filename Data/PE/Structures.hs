@@ -99,7 +99,7 @@ data COFFHeader = COFFHeader {
 instance Show COFFHeader where
 	show hdr = "Target Machine: " ++ (show $ targetMachine hdr) ++"\n"
 		++ "Number of Sections: " ++ (show (numberOfSections hdr)) ++"\n"
-		++ "Timestamp: " ++ (show $ fromIntegral . timeDateStamp $ hdr) ++ "\n"
+		++ "Timestamp: " ++ (show $ timeDateStamp $ hdr) ++ "\n"
 		++ "Symbol Table Pointer: 0x" ++ (showHex (pointerToSymbolTable hdr) "") ++ "\n"
 		++ "Number of Symbols: " ++ (show $ numberOfSymbols hdr) ++ "\n"
 		++ "Size of Optional Headers: " ++ (show $ sizeofOptionalHeaders hdr) ++ "\n"
@@ -215,7 +215,7 @@ instance Binary DirectoryEntry where
           size <- getWord32le
           let entry = DirEntry {virtualAddr=addr, entrySize=size}
           return $ entry 
-  put x = error "Serialization of DirectoryEntry not supported."
+  put _ = error "Serialization of DirectoryEntry not supported."
 
 data SectionTable = SectionTable {
 	sectionHeaderName :: String,
@@ -249,7 +249,7 @@ instance Binary SectionTable where
                                        numberOfLineNumbers=numberOfLineNumbers', secCharacteristics=secCharacteristics'}
            return header
        
-  put x = error "SectionTable serialization not supported"
+  put _ = error "SectionTable serialization not supported"
 
          
 
@@ -262,7 +262,7 @@ instance Binary MachineType where
   get = do
           x <- getWord16le
           return $ mapMachine x
-  put x = error "Serialization of MachineType not supported"
+  put _ = error "Serialization of MachineType not supported"
 
 
 
@@ -289,6 +289,7 @@ mapMachine w = case w of
                    0x1a8 -> SH5
                    0x1c2 -> THUMB
                    0x169 -> WCE
+                   _ -> error "Bad machine type."
 
 getAStr :: Get String
 getAStr = do

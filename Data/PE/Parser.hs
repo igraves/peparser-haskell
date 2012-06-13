@@ -1,7 +1,6 @@
 module Data.PE.Parser (buildFile, buildFileFromBS) where
 import Data.PE.Structures
 import Data.PE.Utils
-import Data.Word
 import qualified Data.ByteString.Lazy as B
 import Data.Binary.Get
 import Data.Maybe
@@ -17,16 +16,16 @@ buildFile fName = do
 buildFileFromBS :: B.ByteString  -- ^ByteString representing a PE file
              -> PEFile -- ^The data structure returned
 buildFileFromBS fbstring =
-                            let peheader = (runGet header fbstring) in
-                            let mapSections = \sections -> (secBytes fbstring sections) in
+                            let peheader = (runGet pheader fbstring) in
+                            let mapSections = \sections' -> (secBytes fbstring sections') in
                             let secTables = sectionTables peheader in
                             let binsections = map mapSections $ map fst secTables in
                             let fixsec = \x -> (x, fromJust $ lookup (sectionHeaderName x) binsections) in
                             let newsections = map fixsec $ map fst secTables in
                              PEFile{peHeader=peheader{sectionTables=newsections}}
 
-header :: Get (PEHeader)
-header = do
+pheader :: Get (PEHeader)
+pheader = do
                   dosheader <- buildMSDOSHead
                   bytes <- bytesRead
                   let peoffset = (fromIntegral (offset dosheader)) - (fromIntegral bytes)
@@ -47,10 +46,10 @@ sections 0 = return []
 sections n = sections (n - 1) >>= \rest -> buildSectionTable >>= \item -> return (item:rest)
 
 secBytes :: B.ByteString -> SectionTable -> (String,B.ByteString)
-secBytes bs sec = let offset = (fromIntegral . pointerToRawData) sec in
+secBytes bs sec = let offset' = (fromIntegral . pointerToRawData) sec in
                   let size = (fromIntegral . sizeOfRawData) sec in
                   let name = sectionHeaderName sec in
-                  let pbs = B.drop offset bs in
+                  let pbs = B.drop offset' bs in
                   let sbs = B.take size pbs in
                   (name, sbs)
 
@@ -70,26 +69,26 @@ buildMSDOSHead = do
                     cs' <- getWord16le
                     relocTableOffset' <- getWord16le
                     overlayNumber' <- getWord16le
-                    getWord16le -- chew through
-                    getWord16le
-                    getWord16le
-                    getWord16le
+                    _ <- getWord16le -- chew through
+                    _ <- getWord16le -- chew through
+                    _ <- getWord16le -- chew through
+                    _ <- getWord16le -- chew through
                     oemIdentifier' <- getWord16le
                     oemInformation' <- getWord16le
-                    getWord32le -- chew through, there are actually 10 16-bit reserved slots, 32 here for brevity
-                    getWord32le
-                    getWord32le
-                    getWord32le
-                    getWord32le
+                    _ <- getWord32le -- chew through, there are actually 10 16-bit reserved slots, 32 here for brevity
+                    _ <-getWord32le
+                    _ <-getWord32le
+                    _ <-getWord32le
+                    _ <-getWord32le
                     offset' <- getWord32le -- this should be 0x80, we could check later if we wanted to
-                    let header = MSDOSHeader {signature=signature', lastsize=lastsize', pagesInFile=pagesInFile',
+                    let header' = MSDOSHeader {signature=signature', lastsize=lastsize', pagesInFile=pagesInFile',
                                               relocations=relocations', headerSizeInParagraph=headerSizeInParagraph',
                                               minExtraParagraphs=minExtraParagraphs', maxExtraParagraphs=maxExtraParagraphs',
                                               ss=ss', sp=sp', checksum=checksum', ip=ip', cs=cs', 
                                               relocTableOffset=relocTableOffset', overlayNumber=overlayNumber',
                                               oemIdentifier=oemIdentifier', oemInformation=oemInformation', offset=offset'}
                         
-                    return header 
+                    return header'
 
 buildPESignature :: Get (PESignature)
 buildPESignature = do
@@ -105,11 +104,11 @@ buildCOFFHeader = do
                     numberOfSymbols' <- getWord32le
                     sizeofOptionalHeaders' <- getWord16le
                     coffCharacteristics' <- getWord16le
-                    let header = COFFHeader { targetMachine=(mapMachine targetMachine'), numberOfSections=numberOfSections',
+                    let header' = COFFHeader { targetMachine=(mapMachine targetMachine'), numberOfSections=numberOfSections',
                                               timeDateStamp=timeDateStamp', pointerToSymbolTable=pointerToSymbolTable',
                                               numberOfSymbols=numberOfSymbols', sizeofOptionalHeaders=sizeofOptionalHeaders',
                                               coffCharacteristics=coffCharacteristics'}
-                    return header
+                    return header'
 
 
 
@@ -128,17 +127,17 @@ buildSFHeader = do
                    case (standardSig') of
                           0x10B -> do 
                                        baseOfData' <- getWord32le
-                                       let header = StandardFields { standardSig=standardSig', lnMajorVersion=lnMajorVersion',
+                                       let header' = StandardFields { standardSig=standardSig', lnMajorVersion=lnMajorVersion',
                                                                    lnMinorVersion=lnMinorVersion', sizeOfCode=sizeOfCode', sizeOfInitializedData=sizeOfInitializedData',
                                                                    sizeOfUninitData=sizeOfUninitData', addressOfEntryPoint=addressOfEntryPoint',
                                                                    baseOfCode=baseOfCode', baseOfData=baseOfData'}
-                                       return header
+                                       return header'
                           0x20B -> do
-                                       let header = SFPlus { standardSig=standardSig', lnMajorVersion=lnMajorVersion',
+                                       let header' = SFPlus { standardSig=standardSig', lnMajorVersion=lnMajorVersion',
                                                                    lnMinorVersion=lnMinorVersion', sizeOfCode=sizeOfCode', sizeOfInitializedData=sizeOfInitializedData',
                                                                    sizeOfUninitData=sizeOfUninitData', addressOfEntryPoint=addressOfEntryPoint',
                                                                    baseOfCode=baseOfCode'}
-                                       return header
+                                       return header'
                           _ -> error "Unrecognized PE format Magic Number"
 
 
@@ -166,7 +165,7 @@ buildWSFHeader = do
                     sizeOfHeapCommit' <- getWord32le
                     loaderFlags' <- getWord32le
                     numberOfRVAandSizes' <- getWord32le
-                    let header = WindowsSpecFields { imageBase=imageBase', sectionAlignment=sectionAlignment',
+                    let header' = WindowsSpecFields { imageBase=imageBase', sectionAlignment=sectionAlignment',
                                                      fileAlignment=fileAlignment', majorOSVersion=majorOSVersion',
                                                      minorOSVersion=minorOSVersion', majorImageVersion=majorImageVersion',
                                                      minorImageVersion=minorImageVersion', majorSubSystemVersion=majorSubSystemVersion',
@@ -175,7 +174,7 @@ buildWSFHeader = do
                                                      checkSum16=checkSum16', dllCharacteristics=dllCharacteristics', sizeOfStackReserve=sizeOfStackReserve',
                                                      sizeOfStackCommit=sizeOfStackCommit', sizeOfHeapReserve=sizeOfHeapReserve', 
                                                      sizeOfHeapCommit=sizeOfHeapCommit', loaderFlags=loaderFlags', numberOfRVAandSizes=numberOfRVAandSizes' }
-                    return header
+                    return header'
 
 buildWSFPlus :: Get (WindowsSpecFields)
 buildWSFPlus = do
@@ -200,7 +199,7 @@ buildWSFPlus = do
                     sizeOfHeapCommit' <- getWord64le
                     loaderFlags' <- getWord32le
                     numberOfRVAandSizes' <- getWord32le
-                    let header = WSFPlus { imgBase=imageBase', sectionAlignment=sectionAlignment',
+                    let header' = WSFPlus { imgBase=imageBase', sectionAlignment=sectionAlignment',
                                                      fileAlignment=fileAlignment', majorOSVersion=majorOSVersion',
                                                      minorOSVersion=minorOSVersion', majorImageVersion=majorImageVersion',
                                                      minorImageVersion=minorImageVersion', majorSubSystemVersion=majorSubSystemVersion',
@@ -209,7 +208,7 @@ buildWSFPlus = do
                                                      checkSum16=checkSum16', dllCharacteristics=dllCharacteristics', szOfStackReserve=sizeOfStackReserve',
                                                      szOfStackCommit=sizeOfStackCommit', szOfHeapReserve=sizeOfHeapReserve', 
                                                      szOfHeapCommit=sizeOfHeapCommit', loaderFlags=loaderFlags', numberOfRVAandSizes=numberOfRVAandSizes' }
-                    return header
+                    return header'
 
 
 buildDataDirectories :: Int -> Get ([DirectoryEntry])
