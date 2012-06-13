@@ -22,4 +22,5 @@ Library
     Exposed-modules: 
        Data.PE.Parser, 
        Data.PE.Structures,
-       Data.PE.Utils
+       Data.PE.Utils,
+       Data.PE.Tools
