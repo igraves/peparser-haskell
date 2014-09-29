@@ -4,17 +4,17 @@ Description:	Extract the header information and sections from a file of the PE o
 Synopsis: A parser for PE object files.
 License:		BSD3
 License-File:	LICENSE
-Author:			Ian Graves, Sebastian Graf
-Maintainer:		thegravian@gmail.com, sgraf1337@gmail.com
+Author:			Ian Graves
+Maintainer:		thegravian@gmail.com
 Category: Data
 Stability: Experimental
-homepage: https://github.com/sgraf812/peparser-haskell
+homepage: https://github.com/igraves/peparser-haskell
 Build-Type:		Simple
 Cabal-Version:	>= 1.10
 
 source-repository head
   type: git
-  location: git://github.com/sgraf812/peparser-haskell.git
+  location: git://github.com/igraves/peparser-haskell.git
 
 
 Library
