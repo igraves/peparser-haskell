@@ -18,7 +18,7 @@ source-repository head
 
 
 Library
-    Language-Version: Haskell2010
+    Default-Language: Haskell2010
     Build-Depends:	base >= 3, bytestring >= 0.9.1, binary >= 0.5.0, array >= 0.3
     Exposed-modules: 
        Data.PE.Parser, 
